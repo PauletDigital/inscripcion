@@ -40,7 +40,28 @@ input:focus,select:focus,button:focus-visible{outline:3px solid var(--teal);outl
 .codigo{font:800 2.4rem "Bricolage Grotesque",sans-serif;letter-spacing:.04em;margin:.3rem 0;color:var(--teal)}
 .constancia button{margin:.4rem;padding:.6rem 1rem;border-radius:8px;border:1px solid var(--line);background:var(--paper);color:var(--ink);font:inherit;cursor:pointer}
 small{color:var(--muted)}
-@media print{header,.tabs,#f,#c,.constancia button,#estado{display:none!important}main{margin:0}}
+.icon-btn{display:inline-flex;align-items:center;gap:.5rem;margin-top:.8rem;padding:.55rem .9rem;border-radius:8px;border:1px solid currentColor;background:transparent;color:inherit;font:600 .95rem "Source Sans 3",sans-serif;cursor:pointer}
+.icon-btn svg{width:20px;height:20px}
+#print{display:none}
+@page{size:A4;margin:18mm}
+@media print{
+ header,main{display:none!important}
+ body{background:#fff}
+ #print{display:block;color:#12233F;font:14px/1.5 "Source Sans 3",Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ .p-top{border-bottom:5px solid #E8A100;padding-bottom:10px;margin-bottom:22px}
+ .p-top small{color:#4C5B73;letter-spacing:.08em;text-transform:uppercase;font-size:11px}
+ .p-top h1{font:800 22px "Bricolage Grotesque",Arial,sans-serif;margin:4px 0 0;color:#12233F}
+ .p-title{text-align:center;font:800 26px "Bricolage Grotesque",Arial,sans-serif;letter-spacing:.06em;margin:0 0 4px}
+ .p-sub{text-align:center;color:#4C5B73;margin:0 0 22px}
+ .p-code{border:2px solid #12233F;border-radius:10px;text-align:center;padding:12px;margin-bottom:22px}
+ .p-code span{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#4C5B73}
+ .p-code b{font:800 34px "Bricolage Grotesque",Arial,sans-serif;letter-spacing:.06em;color:#0F7B8A}
+ .p-tab{width:100%;border-collapse:collapse}
+ .p-tab th,.p-tab td{text-align:left;padding:9px 10px;border-bottom:1px solid #CBD5E4}
+ .p-tab th{width:34%;color:#4C5B73;font-weight:600;background:#F2F5FA}
+ .p-note{margin-top:26px;padding:10px 12px;border-left:5px solid #E8A100;background:#FFF8E6;font-size:13px}
+ .p-foot{margin-top:40px;text-align:center;color:#4C5B73;font-size:11px}
+}
 </style>
 </head>
 <body>
@@ -89,7 +110,7 @@ small{color:var(--muted)}
   <p id="okNombre" style="margin:.4rem 0"></p>
   <div class="codigo" id="okCodigo"></div>
   <small>Guarda este código. También lo enviamos a tu correo (revisa la carpeta de spam).</small><br>
-  <button onclick="window.print()">Imprimir constancia</button>
+  <button id="impOk">Imprimir constancia</button>
   <button onclick="location.reload()">Nueva inscripción</button>
  </section>
 
@@ -97,9 +118,25 @@ small{color:var(--muted)}
   <label for="dniC" style="margin-top:0">Ingresa tu DNI</label>
   <input id="dniC" inputmode="numeric" maxlength="8" autocomplete="off">
   <button class="go" id="buscar">Consultar</button>
-  <div id="res" class="msg hidden" role="status"></div>
+  <div id="res" class="msg hidden" role="status">
+   <span id="resT"></span><br>
+   <button type="button" id="imp" class="icon-btn hidden" aria-label="Imprimir constancia" title="Imprimir constancia">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="9" rx="2"/><path d="M6 14h12v7H6z"/></svg>
+    Imprimir constancia
+   </button>
+  </div>
  </section>
 </div></main>
+
+<div id="print" aria-hidden="true">
+ <div class="p-top"><small>II.EE. MSE-SFT</small><h1>Concurso de Computación e Informática</h1></div>
+ <p class="p-title">CONSTANCIA DE INSCRIPCIÓN</p>
+ <p class="p-sub">Se deja constancia de que el estudiante se encuentra inscrito en el concurso.</p>
+ <div class="p-code"><span>Código de inscripción</span><b id="pCod"></b></div>
+ <table class="p-tab" id="pTab"></table>
+ <div class="p-note">Conserve esta constancia o su código de inscripción. Podrá volver a imprimirla desde la sección «Consultar mi inscripción» con su DNI.</div>
+ <div class="p-foot" id="pFoot"></div>
+</div>
 
 <script>
 /* ===== CONFIGURA ESTAS DOS LÍNEAS ===== */
@@ -110,6 +147,16 @@ const $ = id => document.getElementById(id);
 const soloNum = e => e.target.value = e.target.value.replace(/\D/g,'');
 ['dni','dniC','telefono'].forEach(i => $(i).addEventListener('input', soloNum));
 
+function imprimirConstancia(d){
+  $('pCod').textContent = d.codigo;
+  const filas = [['Fecha de inscripción',d.fecha],['DNI',d.dni],['Apellidos',d.apellidos],['Nombres',d.nombres],['Grado',d.grado],
+    ['Institución educativa',d.institucion],['Modalidad',d.modalidad],['Correo electrónico',d.correo],['Teléfono',d.telefono]];
+  const t = $('pTab'); t.textContent = '';
+  filas.forEach(([k,v]) => { const tr = t.insertRow(); const th = document.createElement('th'); th.textContent = k; tr.appendChild(th); tr.insertCell().textContent = v; });
+  $('pFoot').textContent = 'Documento emitido el ' + new Date().toLocaleString('es-PE');
+  window.print();
+}
+let ultimo = null;
 function mostrar(el, texto, tipo){ el.textContent = texto; el.className = 'msg ' + tipo; }
 function cerrar(){
   $('estado').textContent = 'Inscripciones cerradas';
@@ -141,24 +188,28 @@ $('form').addEventListener('submit', async e => {
     const j = await r.json();
     if(j.ok){
       $('f').classList.add('hidden'); $('ok').classList.remove('hidden');
-      $('okNombre').textContent = j.nombre; $('okCodigo').textContent = j.codigo;
+      $('okNombre').textContent = j.nombre; $('okCodigo').textContent = j.codigo; ultimo = j.data;
     } else mostrar($('msg'), j.error || 'No se pudo registrar.', 'bad');
   }catch(err){ mostrar($('msg'),'Sin conexión con el servidor. Intenta de nuevo.','bad'); }
   $('enviar').disabled = false; $('enviar').textContent = 'Inscribirme';
 });
 
+$('impOk').onclick = () => ultimo && imprimirConstancia(ultimo);
+$('imp').onclick = () => ultimo && imprimirConstancia(ultimo);
+function mostrarRes(texto, tipo, conImprimir){ $('res').className = 'msg ' + tipo; $('resT').textContent = texto; $('imp').classList.toggle('hidden', !conImprimir); }
 $('buscar').onclick = async () => {
   const dni = $('dniC').value.trim();
-  if(!/^\d{8}$/.test(dni)) return mostrar($('res'),'El DNI debe tener 8 dígitos.','bad');
-  $('buscar').disabled = true; mostrar($('res'),'Buscando…','good');
+  if(!/^\d{8}$/.test(dni)) return mostrarRes('El DNI debe tener 8 dígitos.','bad');
+  $('buscar').disabled = true; ultimo = null; mostrarRes('Buscando…','good');
   try{
     const j = await (await fetch(API+'?accion=consulta&dni='+dni)).json();
-    if(!j.ok) mostrar($('res'), j.error, 'bad');
-    else if(j.inscrito) mostrar($('res'), 'INSCRITO — ' + j.nombre + ' (código ' + j.codigo + ')', 'good');
-    else mostrar($('res'), 'NO INSCRITO — no hay registro con ese DNI.', 'bad');
-  }catch(err){ mostrar($('res'),'No se pudo consultar. Intenta de nuevo.','bad'); }
+    if(!j.ok) mostrarRes(j.error, 'bad');
+    else if(j.inscrito){ ultimo = j.data; mostrarRes('INSCRITO — ' + j.nombre + ' (código ' + j.codigo + ')', 'good', true); }
+    else mostrarRes('NO INSCRITO — no hay registro con ese DNI.', 'bad');
+  }catch(err){ mostrarRes('No se pudo consultar. Intenta de nuevo.','bad'); }
   $('buscar').disabled = false;
 };
 </script>
+<p>Desarrollador: @hiamet </p>
 </body>
 </html>
